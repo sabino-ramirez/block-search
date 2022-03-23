@@ -1,0 +1,19 @@
+{
+  "name": "midterm",
+  "version": "1.0.0",
+  "description": "",
+  "main": "clis.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "inquirer": "^8.2.1",
+    "yargs": "^17.4.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.11.0",
+    "prettier": "^2.6.0"
+  }
+}
