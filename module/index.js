@@ -1,17 +1,20 @@
-const { request, GraphQLClient, gql } = require('graphql-request');
+const { request, gql } = require('graphql-request');
 const config = require('./config.json');
 
-const baseURL = config.ens_url;
-
-// query ENS subgraph for domains regarding keyword
 const ensSearch = async inputKeyword => {
   try {
     const query = gql`
       query getInfo($keyword: String!) {
-        domains(first: 5, where: { labelName_starts_with: $keyword }) {
+        domains(first: 9, where: { labelName_starts_with: $keyword }) {
           name
           labelName
           labelhash
+          parent {
+            name
+          }
+          subdomains {
+            name
+          }
           owner {
             id
             domains {
@@ -27,29 +30,42 @@ const ensSearch = async inputKeyword => {
       }
     `;
 
-    // one way graphql-request allows us to make requests
     return request({
       url: config.ens_url,
       document: query,
       variables: { keyword: inputKeyword }
     });
   } catch (err) {
-    return err;
+    console.log(err);
   }
 };
 
-// const cryptoMediaSearch = async inputKeyword => {
-//   try {
-//     const endpoint = config.ens_url;
-//     const variables = {
-//       keyword: inputKeyword
-//     };
-//     const query = gql``;
-//   } catch (err) {
-//     return err;
-//   }
-// };
+const collectionSearch = async (inputKeyword) => {
+  try {
+    const query = gql`
+      query getInfo($keyword: String!) {
+        nftContracts(first: 9, where: {name_starts_with: $keyword}) {
+          id
+          name
+          type
+          symbol
+          numTokens
+          numOwners
+        }
+      }
+    `;
+
+    return request({
+      url: config.nft_owners_url,
+      document: query,
+      variables: { keyword: inputKeyword }
+    });
+  } catch (err) {
+    console.log(err);
+  }
+}
 
 module.exports = {
-  ensSearch
+  ensSearch,
+  collectionSearch
 };

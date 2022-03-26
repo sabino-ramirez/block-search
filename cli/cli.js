@@ -13,7 +13,6 @@ yargs(process.argv.slice(2))
     },
     arg => {
       app.searchWithKeyword(arg.keyword);
-      // console.log(arg.keyword);
     }
   )
   .alias('h', 'help').argv;
