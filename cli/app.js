@@ -1,10 +1,32 @@
 const inquirer = require('inquirer');
 const { Table } = require('console-table-printer');
+const chalk = require('chalk');
 const blockSearch = require('../module/index.js');
 
 let ensResponse, collectionResponse;
 let decentralandResponse;
 let filterChoiceArr;
+const tableBorderStyle = {
+  headerTop: {
+    left: '╔',
+    mid: '╦',
+    right: '╗',
+    other: '═'
+  },
+  headerBottom: {
+    left: '╟',
+    mid: '╬',
+    right: '╢',
+    other: '═'
+  },
+  tableBottom: {
+    left: '╚',
+    mid: '╩',
+    right: '╝',
+    other: '═'
+  },
+  vertical: '║'
+};
 
 const _newSearchPrompt = typeOfRestart => {
   if (typeOfRestart === 'fresh') {
@@ -13,7 +35,7 @@ const _newSearchPrompt = typeOfRestart => {
         {
           type: 'input',
           name: 'newSearchWord',
-          message: 'Enter new search keyword: '
+          message: chalk.magenta('Enter new search keyword: ')
         }
       ])
       .then(input => {
@@ -23,10 +45,11 @@ const _newSearchPrompt = typeOfRestart => {
     inquirer
       .prompt([
         {
-          type: 'rawlist',
+          type: 'list',
           name: 'newSearchChoice',
-          message:
-            'Welp. End of the road.' + '\n' + 'What would you like to do next?',
+          message: chalk.magenta(
+            'End of the road.' + '\n' + 'What would you like to do next?'
+          ),
           choices: ['New search', 'exit']
         }
       ])
@@ -34,7 +57,7 @@ const _newSearchPrompt = typeOfRestart => {
         if (answer.newSearchChoice === 'New search') {
           _newSearchPrompt('fresh');
         } else {
-          console.log('exiting...');
+          console.log(chalk.redBright('exiting...'));
         }
       });
   }
@@ -46,34 +69,32 @@ const _filtersPrompt = filterChoiceArr => {
       {
         type: 'list',
         name: 'filter',
-        message: 'Select the type of results you want to see.',
+        message: chalk.magenta('Select the type of results you want to see.'),
         choices: filterChoiceArr
       }
     ])
     .then(selection => {
+      const results = [];
       switch (selection.filter) {
         case 'Domains':
-          const domainResults = [];
           for (const domain of ensResponse.domains) {
-            domainResults.push(domain.name);
+            results.push(chalk.blue(domain.name));
           }
-          _resultsPrompt(selection.filter, domainResults);
+          _resultsPrompt(selection.filter, results);
           break;
 
         case 'Users':
-          const userResults = [];
           for (const user of ensResponse.domains) {
-            userResults.push(user.labelName);
+            results.push(chalk.blue(user.labelName));
           }
-          _resultsPrompt(selection.filter, userResults);
+          _resultsPrompt(selection.filter, results);
           break;
 
         case 'Collections':
-          const collectionResults = [];
           for (const collection of collectionResponse.nftContracts) {
-            collectionResults.push(collection.name);
+            results.push(chalk.blue(collection.name));
           }
-          _resultsPrompt(selection.filter, collectionResults);
+          _resultsPrompt(selection.filter, results);
           break;
       }
     });
@@ -81,6 +102,7 @@ const _filtersPrompt = filterChoiceArr => {
 
 const _resultsPrompt = (type, selectedFilterResults) => {
   const table = new Table({
+    style: tableBorderStyle,
     columns: [
       { name: 'Index', alignment: 'right' },
       { name: type, alignment: 'left' }
@@ -89,12 +111,15 @@ const _resultsPrompt = (type, selectedFilterResults) => {
   let counter = 1;
   for (const listItem of selectedFilterResults) {
     table.addRow({
-      Index: counter,
+      Index: counter + '.' + chalk.gray(' ->'),
       [type]: listItem
     });
     counter++;
   }
-  table.addRow({ Index: 0, [type]: 'Back to filters' });
+  table.addRow({
+    Index: chalk.green('0. ->'),
+    [type]: chalk.green('Back to filters')
+  });
   table.printTable();
 
   inquirer
@@ -102,7 +127,7 @@ const _resultsPrompt = (type, selectedFilterResults) => {
       {
         type: 'input',
         name: 'item',
-        message: 'Enter an index value to learn more.',
+        message: chalk.magenta('Enter an index value to learn more.'),
         validate(input) {
           if (parseInt(input) <= 9) {
             return true;
@@ -117,10 +142,8 @@ const _resultsPrompt = (type, selectedFilterResults) => {
       } else {
         switch (type) {
           case 'Domains':
-            _displayInfo(type, ensResponse.domains[selection.item - 1]);
-            break;
           case 'Users':
-            _displayInfo(type, ensResponse.domains[selection.item - 1].owner);
+            _displayInfo(type, ensResponse.domains[selection.item - 1]);
             break;
           case 'Collections':
             _displayInfo(
@@ -134,26 +157,75 @@ const _resultsPrompt = (type, selectedFilterResults) => {
 };
 
 const _displayInfo = (type, info) => {
-  const table = new Table({
-    columns: [
-      { name: 'Name', alignment: 'center' },
-      { name: 'Hash', alignment: 'center' },
-      { name: 'Owner Hash', alignment: 'center' },
-      { name: 'Subdomains', alignment: 'center' }
-    ]
-  });
+  let table;
   switch (type) {
     case 'Domains':
-      // table.printTable();
-      console.log(info);
+      table = new Table({
+        style: tableBorderStyle,
+        title: chalk.red('Selected Domain'),
+        columns: [
+          { name: 'Name', alignment: 'center' },
+          { name: 'Parent', alignment: 'center' },
+          { name: 'Owner Hash', alignment: 'center' },
+          { name: 'Subdomains', alignment: 'center' }
+        ]
+      });
+      table.addRow({
+        Name: chalk.green(info.name),
+        Parent: chalk.gray(info.parent.name),
+        'Owner Hash': chalk.green(info.owner.id),
+        Subdomains: info.subdomains.length
+          ? chalk.green(info.subdomains.length)
+          : chalk.red('0')
+      });
+      table.printTable();
       _newSearchPrompt('End');
       break;
     case 'Users':
-      console.log(info);
+      table = new Table({
+        style: tableBorderStyle,
+        title: info.labelName,
+        columns: [
+          { name: 'User Hash', alignment: 'center' },
+          { name: 'Domains', alignment: 'center' },
+          { name: 'Registrations', alignment: 'center' },
+          { name: 'Owns Property', alignment: 'center' }
+        ]
+      });
+      table.addRow({
+        'User Hash': chalk.green(info.owner.id),
+        Domains: chalk.gray(info.owner.domains.length),
+        Registrations: info.owner.registrations.length
+          ? chalk.gray(info.owner.registrations.length)
+          : chalk.red('0'),
+        'Owns Property': chalk.red('no')
+      });
+      table.printTable();
       _newSearchPrompt('End');
       break;
     case 'Collections':
-      console.log(info);
+      table = new Table({
+        style: tableBorderStyle,
+        title: info.labelName,
+        columns: [
+          { name: 'Name', alignment: 'center' },
+          { name: 'Symbol', alignment: 'center' },
+          { name: 'Type', alignment: 'center' },
+          { name: 'Total Amount', alignment: 'center' },
+          { name: 'Total Owners', alignment: 'center' }
+        ]
+      });
+      table.addRow({
+        Name: chalk.green(info.name),
+        Symbol: chalk.gray(info.symbol),
+        Type: chalk.gray(info.type),
+        'Total Amount': chalk.blue(info.numTokens),
+        'Total Owners':
+          parseInt(info.numOwners) > 0
+            ? chalk.blue(info.numOwners)
+            : chalk.red(info.numOwners)
+      });
+      table.printTable();
       _newSearchPrompt('End');
       break;
     default:

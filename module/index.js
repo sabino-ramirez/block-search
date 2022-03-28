@@ -40,11 +40,11 @@ const ensSearch = async inputKeyword => {
   }
 };
 
-const collectionSearch = async (inputKeyword) => {
+const collectionSearch = async inputKeyword => {
   try {
     const query = gql`
       query getInfo($keyword: String!) {
-        nftContracts(first: 9, where: {name_starts_with: $keyword}) {
+        nftContracts(first: 9, where: { name_starts_with: $keyword }) {
           id
           name
           type
@@ -63,7 +63,7 @@ const collectionSearch = async (inputKeyword) => {
   } catch (err) {
     console.log(err);
   }
-}
+};
 
 module.exports = {
   ensSearch,
